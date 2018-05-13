@@ -1,15 +1,15 @@
 classdef DrawableRobot < handle
   properties
-    x        %x position in world frame [meters]
-    y        %y position in world frame [meters]
-    theta    %angle relative to world frame [radians]
-    v        %current forward speed of wheels [m/s]
-    gamma    %current wheel turn angle (bicycle model) [radians]
-    Rw       %wheel radius [meters]
-    l        %disance between wheels [meters]
-    gammaMax %max steering angle [radians]
-    vMax     %max linear speed   [m/s]
-    Ld       %min distance to first navigatable point [meters]
+    x          %x position in world frame [meters]
+    y          %y position in world frame [meters]
+    theta      %angle relative to world frame [radians]
+    v          %current forward speed of wheels [m/s]
+    gamma      %current wheel turn angle (bicycle model) [radians]
+    Rw         %wheel radius [meters]
+    l          %disance between wheels [meters]
+    gammaMax   %max steering angle [radians]
+    vMax       %max linear speed   [m/s]
+    Ld         %min distance to first navigatable point [meters]
   end
   properties (SetAccess = private)
     plotHandle
@@ -105,18 +105,21 @@ classdef DrawableRobot < handle
     end
     
     function MoveEulerAck_RedrawRobot(obj, gammaD, vd, C, s, skidDR, skidDF,...
-        tauV, tauG, frame, prevPos, pathPoint)
+        tauV, tauG, frame, prevPos, pathPoint, redraw)
       obj.Move_EulerAckFK(gammaD, vd, C, s, skidDR, skidDF, tauV, tauG);
-      %obj.reverse = true;
-      obj.RedrawRobot(frame, prevPos, pathPoint)
-      %obj.reverse = false;
-      pause(C.aniPause / 400)
+      if redraw
+        obj.RedrawRobot(frame, prevPos, pathPoint)
+        pause(C.aniPause)
+      end
     end
     
     function MoveToEulerAck_RedrawRobot(obj, xd, yd, C, s, skidDR,...
-             skidDF, tauV, tauG, frame, pathPoint)
+             skidDF, tauV, tauG, frame, pathPoint, redraw)
+      
       for t = 0:C.DT:(C.T - C.DT)
-        prevPos = [obj.x, obj.y];
+        if redraw
+          prevPos = [obj.x, obj.y];
+        end
         errX = xd - obj.x;
         errY = -(yd - obj.y);
         thetaD = atan2(errY, errX);
@@ -127,10 +130,14 @@ classdef DrawableRobot < handle
         gammaD = C.Kh * angdiff(thetaD, obj.theta);
 
         obj.Move_EulerAckFK(gammaD, vd, C, s, skidDR, skidDF, tauV, tauG);
-        obj.reverse = true;
-        obj.RedrawRobot(frame, prevPos, pathPoint)
-        obj.reverse = false;
-        pause(C.aniPause / 400)
+        
+        if redraw
+          obj.reverse = true;
+          obj.RedrawRobot(frame, prevPos, pathPoint)
+          obj.reverse = false;
+          pause(C.aniPause / 400)
+        end
+        
         if abs(errX) + abs(errY) < obj.posEpsilon && vd < obj.velEpsilon
           break   % stop if speed slow enough and position close enough
         end

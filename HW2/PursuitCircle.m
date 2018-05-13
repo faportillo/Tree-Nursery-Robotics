@@ -24,6 +24,7 @@ C = struct('X', 1,... %X index
   'posEpsilon', 0.2,... %position requirement
   'aniPause', 0.02 ...  %animation pause
   );
+
 robot = DrawableRobot(15, 5, pi/2, C.Rw, C.L, C.Gmax, C.Vmax, C.Ld);
 path = zeros(2, C.cPoints);
 pathparam = [9, 7, 5, -5];
@@ -31,16 +32,14 @@ angles = 0:0.1:(2 * pi);
 path(C.X, :) = pathparam(1) + pathparam(3) .* sin(angles);
 path(C.Y, :) = pathparam(2) + pathparam(4) .* cos(angles);
 planner = PathPlanner(path);
-frameSize = 14;        %20x20 meters square plot area
+frameSize = 14;        %14x14 meters square plot area
 frame = [2, frameSize + 2, 0, frameSize];
 robot.DrawRobot(frame)
 pathPoint = 'b.';
 
 hold on
 nPoints = size(path, 2);
-for i = 1:nPoints
-  plot(path(C.X, i), path(C.Y, i), 'g*')
-end
+plot(path(C.X, :), path(C.Y, :), 'g*')
 plot(path(C.X, 1), path(C.Y, 1), 'b*')
 plot(path(C.X, nPoints), path(C.Y, nPoints), 'r*')
 
@@ -57,12 +56,6 @@ prev = 1;
 for t = 0:C.DT:(C.T - C.DT)
   prevPos = [robot.x, robot.y];
 
-  %{
-  vd = 0;
-  if abs(errX) + abs(errY) >= obj.posEpsilon
-    vd = C.Kv * sqrt(errX ^ 2 + errY ^ 2);
-  end
-  %}
   if k > length(stepErr)
     stepErr = [stepErr, zeros(1, length(stepErr))];
   end
@@ -73,11 +66,10 @@ for t = 0:C.DT:(C.T - C.DT)
   robot.MoveEulerAck_RedrawRobot(gammaD, vd, C, s, skidDR, skidDF, tauV, ...
     tauG, frame, prevPos, pathPoint);
   if prev == planner.nPoints && abs(errX) + abs(errY) < C.posEpsilon
-    break   % stop if speed slow enough and position close enough
+    break   % stop if navigating to last path point and position close enough
   end
 end
 
-fprintf('Done\n')
 xlabel('World X [m]')
 ylabel('World Y [m]')
 figure
@@ -85,3 +77,4 @@ plot(1:k, stepErr(1:k))
 xlim([0 k+10])
 xlabel('DT Time Step (0.01 s)')
 ylabel('Tracking Error [m]')
+
