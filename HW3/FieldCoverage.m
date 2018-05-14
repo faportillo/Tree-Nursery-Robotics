@@ -6,8 +6,9 @@
 %}
 
 addpath '../Common'
+clear
+close all
 
-useFishtail = false;
 RL = 20;      %meters
 Gmax = 60 * pi/180;
 L = 3;
@@ -15,27 +16,34 @@ X = 1;
 Y = 2;
 N = 10;
 
-initAlloc = 500;
+initAlloc = 1000;
 endI = 2 * N + 2;
 C = struct('W', 2.5,...   %row width [m]
   'L', L,...              %wheelbase [m]
   'Rw', 0.5,...           %radius [m]
   'Vmax', 1,...           %v max     [m/s]
   'Gmax', Gmax,...        %gamma max [radians]
+  'Ld',   1.9,...         %min distance to first navigatable point [meters]
+  'dt',   0.001,...       %seconds
+  'DT',   0.01,...        %seconds
+  'T',    600.0,...        %total move to point time allowed
   'N', N,...              %crop rows
   'RL', 20, ...           %
   'HUGE', 10^9,...        %
-  'pointsPerMeter', 2,... %
+  'ptsPerMeter', 2,...    %
+  'posEpsilon', 0.2,...   %position requirement
   'endI', endI,...        %number of nodes
   'Rmin', L / tan(Gmax),... %Min turning radius
-  'MULT', 500 ...           %multiplier
+  'MULT', 5, ...          %multiplier
+  'redrawT',0.2,...       %# of DT to redraw robot for pursuit controller
+  'aniPause', 0.001 ...    %animation pause
   );
 path = zeros(2, 3);
 planner = PathPlanner(path, C.Rmin, C.W);
-
-robot = DrawableRobot(-C.W, RL / 2, pi/2, C.Rw, C.L, C.Gmax, C.Vmax);
-nodes = [-C.W, (C.W / 2 + 0:(C.N + 1)), (C.W / 2 + 0:(C.N + 1)), -C.W;...
-         (RL / 2), zeros(1, C.N), (zeros(1, C.N) + RL), (RL / 2)];
+xs = (C.W / 2):C.W:(C.W / 2 + C.W * (C.N - 1));
+robot = DrawableRobot(-C.W, RL / 2, pi/2, C.Rw, C.L, C.Gmax, C.Vmax, C.Ld);
+nodes = [-C.W, xs, xs, -C.W;
+  (RL / 2), zeros(1, C.N), (zeros(1, C.N) + RL), (RL / 2)];
 
 fprintf('Start and End: (%0.2f, %0.2f) (%0.2f, %0.2f)\n', nodes(X, 1), nodes(Y, 1),...
   nodes(X, endI), nodes(Y, endI))
@@ -106,15 +114,23 @@ disp(route)
 fprintf('\n')
 bad = ValidPath(route, C);
 pathPoints = zeros(2, initAlloc);
-nPoints = 0;
-upY =   linspace(0, RL, RL * C.pointsPerMeter);
-downY = linspace(RL, 0, RL * C.pointsPerMeter);
+nPoints = 21;
+upY =   linspace(0, RL, RL * C.ptsPerMeter);
+downY = linspace(RL, 0, RL * C.ptsPerMeter);
+
 if bad == 0
   fprintf('Good Route\n')
-  for node = 3:2:(endI - 2)
+  
+  pathPoints(:, 1) = nodes(:, 1);
+  pathPoints(:, 2:nPoints) = [(zeros(1, 10) +  nodes(X, 1)), ...
+    linspace(nodes(X, 1), nodes(X, route(2)), 10); linspace(nodes(Y, 1), ...
+    nodes(Y, route(2)), 10), (zeros(1, 10) +  nodes(Y, route(2)))];
+  
+  for node = 3:2:(endI - 1)
     nI = route(node);
+    nI_1 = route(node + 1);
     bottom = nodes(Y, nI) == 0;
-    left = nodes(X, nI) > nodes(X, nI + 1);
+    left = nodes(X, nI) > nodes(X, nI_1);
     if bottom && left
       type = 'bl';
       yCoords = downY;
@@ -129,22 +145,93 @@ if bad == 0
       yCoords = upY;
     end
     
-    straight = [zeros(1, RL * 2) + nodes(X, nI); yCoords]; 
-              
-    points = planner.GenerateTurnPath(useFishtail, nodes(X, nI), ...
-      nodes(Y, nI), type, abs(nodes(X, nI) - nodes(X, nI + 1)));
+    straight = [zeros(1, RL * C.ptsPerMeter) + nodes(X, nI); yCoords]; 
+    if node ~= endI - 1          
+      points = planner.GenerateTurnPath(C.ptsPerMeter, nodes(X, nI), ...
+        nodes(Y, nI), type, abs(route(node) - route(node + 1)));
+    end
     
-    nPoints = length(points) + nPoints;
+    oldNPoints = nPoints;
+    if node == endI - 1
+      nPoints = length(straight) + nPoints;
+    else
+      nPoints = length(points) + length(straight) + nPoints;
+    end
+    
     if nPoints > length(pathPoints)     %reallocate logarithmically
       pathPoints = [pathPoints, zeros(2, length(pathPoints))];
     end
     %add points to full path
-    pathPoints((nPoints - length(points) + 1):nPoints) = points;
+    pathPoints(:, (oldNPoints + 1):(oldNPoints + length(straight))) = ...
+      straight;
     
-    
+    if node ~= endI - 1
+      pathPoints(:, (nPoints - length(points) + 1):nPoints) = points;
+    end
+
   end
+  
+  if nPoints+25 > length(pathPoints)     %reallocate logarithmically
+    pathPoints = [pathPoints, zeros(2, length(pathPoints))];
+  end
+  pathPoints(:, (nPoints+1):(nPoints+25)) = [linspace(nodes(X, route(...
+    endI - 1)), nodes(X, 1), 10), (zeros(1, 15) + nodes(X, 1)); ...
+    (zeros(1, 10) + nodes(Y, route(endI - 1))), linspace(nodes(Y, ...
+    route(endI - 1)), nodes(Y, 1), 15)];
+  
+  for i = 0:C.N
+    plot(C.W * [i,(i+1e-6)], [0,RL], 'r-')
+    hold on
+  end
+  plot(pathPoints(X, 22:nPoints), pathPoints(Y, 22:nPoints), 'b.')
+  
+  planner1 = PathPlanner(pathPoints(:, 1:(nPoints+25)));
+  frame = [-10, 30, -12.5, 27.5];
+  if nodes(Y, route(2)) == 0
+    robot.theta = -pi/2;
+  end
+  robot.DrawRobot(frame)
+  pathPoint = 'b.';
+  
+  tauG = 0.15;
+  tauV = 0.5;
+  s = 0;
+  skidDR = 0;
+  skidDF = 0;
+  vd = C.Vmax;
+  k = 1;
+  stepErr = zeros(1, initAlloc);
+
+  prev = 1;
+  for t = 0:C.DT:(C.T - C.DT)
+    redraw = mod(t, C.redrawT) == 0;
+    if redraw
+      prevPos = [robot.x, robot.y];
+    end
+
+    if k > length(stepErr)
+      stepErr = [stepErr, zeros(1, length(stepErr))];
+    end
+    [gammaD, err, prev, errX, errY] = planner1.FirstFeasiblePoint(robot, prev);
+    stepErr(k) = err;
+    k = k + 1;
+
+    robot.MoveEulerAck_RedrawRobot(gammaD, vd, C, s, skidDR, skidDF, tauV, ...
+      tauG, frame, prevPos, pathPoint, redraw);
+    if prev == planner1.nPoints && abs(errX) + abs(errY) < C.posEpsilon
+      break   % stop if navigating to last path point and position close enough
+    end
+  end
+ 
+  plot(pathPoints(X, 1:21), pathPoints(Y, 1:21), 'g.')
+  plot(pathPoints(X, (nPoints+1):(nPoints+25)), ...
+    pathPoints(Y, (nPoints+1):(nPoints+25)), 'k.')
+
+  xlabel('World X [m]')
+  ylabel('World Y [m]')
+
 else
-  fprintf('Bad Pairs: %d\n', bad)
+  fprintf('Bad Pairs: %d\nTry Running Again...\n', bad)
 end
 
 fprintf('Done\n')

@@ -35,7 +35,8 @@ classdef PathPlanner < handle
       first = previousIndex;
       startMin = Inf;
       X = 1; Y = 2;
-      for i = 1:obj.nPoints
+      endI = min(obj.nPoints, previousIndex+20);
+      for i = previousIndex:endI
         di = sqrt(abs(obj.path_(X, i) - robot.x) ^ 2 + ...
                   abs(obj.path_(Y, i) - robot.y) ^ 2 );
         if di < trackErr
@@ -60,49 +61,54 @@ classdef PathPlanner < handle
       end
     end
     
-    function points = GenerateTurnPath(obj, useFishtail, mult, x, y, type, ...
+    function points = GenerateTurnPath(obj, mult, x, y, type, ...
         varargin)
       %{1} = d
       %{2} = Rmin
       %{3} = w
       [rm, w, dw] = obj.GetRWD(varargin);
       rMinNew = rm * obj.rMinMult;
-      
-      if dw > 2 * rm
-        points = obj.GeneratePiTurnPath(mult, x, y, angles, rMinNew, w, dw);
-      elseif useFishtail
-        points = obj.GenerateFishtailPath(mult, x, y, angles, rMinNew, w, dw);
+      if ~(strcmp(type, 'bl') || strcmp(type, 'br') || strcmp(type, 'tl') ||...
+           strcmp(type, 'tr'))
+        fprintf('Invalid turn direction: %s\n', type);
+        points = [0;0];
       else
-        points = obj.GenerateOmegaTurnPath(mult, x, y, angles, rMinNew, w, dw);
+        if dw > 2 * rm
+          points = obj.GeneratePiTurnPath(mult, x, y, type, rMinNew, w, dw);
+        else
+          points = obj.GenerateOmegaTurnPath(mult, x, y, type, rMinNew, w, dw);
+        end
       end
+      
     end
     
     function points = GeneratePiTurnPath(obj, mult, x, y, type, rm, w, dw)
-      straight = ceil((dw - 2 * rm) * mult);
-      if type == 'bl'       %bottom left turn
-        angles1 = linspace(0, -pi / 2, mult * 5);
-        angles2 = linspace(-pi / 2, -pi, mult * 5);
+      straight = ceil((dw - 2 * rm) * 1.5 * mult);
+      arc = ceil(2 * rm * mult);
+      if strcmp(type, 'bl')       %bottom west (left) turn
+        angles1 = linspace(0, -pi / 2, arc);
+        angles2 = linspace(-pi / 2, -pi, arc);
         points = [[(rm * (cos(angles1) - 1)), linspace(-rm, -dw + rm, ...
                    straight), (rm * cos(angles2)) - dw + rm] + x;...
           [(rm * sin(angles1)), (zeros(1, straight) - rm),...
-           (rm * sin(angles2))]];
-      elseif type == 'br'   %bottom right turn
-        angles1 = linspace(-pi / 2, -pi, mult * 5);
-        angles2 = linspace(0, -pi / 2, mult * 5);
+           (rm * sin(angles2))] + y];
+      elseif strcmp(type, 'br')   %bottom east (right) turn
+        angles1 = linspace(-pi / 2, -pi, arc);
+        angles2 = linspace(0, -pi / 2, arc);
         points = [[(rm * (cos(angles1) + 1)), linspace(rm, dw - rm, ...
                    straight), (rm * cos(angles2)) + dw - rm] + x;...
           [(rm * sin(angles1)), (zeros(1, straight) - rm),...
-           (rm * sin(angles2))]];
-      elseif type == 'tl'   %top left turn
-        angles1 = linspace(0, pi / 2, mult * 5);
-        angles2 = linspace(pi / 2, pi, mult * 5);
+           (rm * sin(angles2))] + y];
+      elseif strcmp(type, 'tl')   %top left turn
+        angles1 = linspace(0, pi / 2, arc);
+        angles2 = linspace(pi / 2, pi, arc);
         points = [[(rm * (cos(angles1) - 1)), linspace(-rm, -dw + rm, ...
                    straight), (rm * cos(angles2)) - dw + rm] + x;...
           [(rm * sin(angles1)), (zeros(1, straight) + rm),...
            (rm * sin(angles2))] + y];
       else                  %top right turn
-        angles1 = linspace(pi, pi / 2, mult * 5);
-        angles2 = linspace(pi / 2, 0, mult * 5);
+        angles1 = linspace(pi, pi / 2, arc);
+        angles2 = linspace(pi / 2, 0, arc);
         points = [[(rm * (cos(angles1) + 1)), linspace(rm, dw - rm, ...
                    straight), (rm * cos(angles2)) + dw - rm] + x;...
           [(rm * sin(angles1)), (zeros(1, straight) + rm),...
@@ -111,11 +117,47 @@ classdef PathPlanner < handle
     end
     
     function points = GenerateOmegaTurnPath(obj, mult, x, y, type, rm, w, dw)
-      ;
-    end
-    
-    function points = GenerateFishtailPath(obj, mult, x, y, type, rm, w, dw)
-      ;
+      gamma = acos(1 - (2 * rm + dw) ^ 2 / (8 * rm ^ 2));
+      alpha = (pi - gamma) / 2;
+      alphaArc = ceil(1.1 * rm * alpha * mult);  %points on alpha arcs
+      gammaArc = ceil(8 * rm / gamma * mult);
+      gArcOffset = sqrt((2 * rm)^2 - (rm + dw / 2)^2);
+      if strcmp(type, 'bl') || strcmp(type, 'br')
+        anglesL = linspace(0, -alpha, alphaArc);
+        anglesM = linspace(-pi - alpha, alpha, gammaArc);
+        anglesR = linspace(pi + alpha, pi, alphaArc);
+        if strcmp(type, 'bl')
+          xL = x - dw;
+        else
+          xL = x;
+        end
+        points = [[(rm * (cos(anglesL) - 1)), (rm * cos(anglesM) + dw / 2), ...
+                   (rm * cos(anglesR) + dw + rm)] + xL;...
+          [(rm * sin(anglesL)), (rm * sin(anglesM) - gArcOffset), ...
+           (rm * sin(anglesR))] + y];
+        
+        if strcmp(type, 'br')       %bottom west (left) turn
+          points = fliplr(points);
+        end
+      else
+        anglesL = linspace(0, alpha, alphaArc);
+        anglesM = linspace(pi + alpha, -alpha, gammaArc);
+        anglesR = linspace(pi - alpha, pi, alphaArc);
+
+        if strcmp(type, 'tl')       %top west (left) turn
+          xL = x - dw;
+        else                  %top east (right) turn
+          xL = x;
+        end
+        points = [[(rm * (cos(anglesL) - 1)), (rm * cos(anglesM) + dw / 2), ...
+                   (rm * cos(anglesR) + dw + rm)] + xL;...
+          [(rm * sin(anglesL)), (rm * sin(anglesM) + gArcOffset), ...
+           (rm * sin(anglesR))] + y];
+        
+        if strcmp(type, 'tr')       %bottom west (left) turn
+          points = fliplr(points);
+        end
+      end
     end
     
     %--------------GETTERS and SETTERS-------------------
