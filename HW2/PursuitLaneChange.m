@@ -1,8 +1,8 @@
 %{
- PursuitCircle.m
+ PursuitLaneChange.m
  Tim Ambrose
  28 Apr 2018
- Generates circle points and persues with pure persuit controller
+ Generates lane-change points and persues with pure persuit controller
 %}
 addpath '../Common'
 clear

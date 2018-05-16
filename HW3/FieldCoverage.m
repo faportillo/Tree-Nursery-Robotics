@@ -10,23 +10,24 @@ clear
 close all
 
 RL = 20;      %meters
-Gmax = 60 * pi/180;
+Gmax = 30 * pi/180;
 L = 3;
 X = 1;
 Y = 2;
 N = 10;
+Vm = 4;
 
 initAlloc = 1000;
 endI = 2 * N + 2;
 C = struct('W', 2.5,...   %row width [m]
   'L', L,...              %wheelbase [m]
   'Rw', 0.5,...           %radius [m]
-  'Vmax', 1,...           %v max     [m/s]
+  'Vmax', Vm,...          %v max     [m/s]
   'Gmax', Gmax,...        %gamma max [radians]
-  'Ld',   1.9,...         %min distance to first navigatable point [meters]
+  'Ld',   2.0,...         %min distance to first navigatable point [meters]
   'dt',   0.001,...       %seconds
   'DT',   0.01,...        %seconds
-  'T',    600.0,...        %total move to point time allowed
+  'T',    600.0,...       %total move to point time allowed
   'N', N,...              %crop rows
   'RL', 20, ...           %
   'HUGE', 10^9,...        %
@@ -35,15 +36,15 @@ C = struct('W', 2.5,...   %row width [m]
   'endI', endI,...        %number of nodes
   'Rmin', L / tan(Gmax),... %Min turning radius
   'MULT', 5, ...          %multiplier
-  'redrawT',0.2,...       %# of DT to redraw robot for pursuit controller
-  'aniPause', 0.001 ...    %animation pause
+  'redrawT',0.2 / Vm,...  %# of DT to redraw robot for pursuit controller
+  'aniPause', 0.001 ...   %animation pause
   );
 path = zeros(2, 3);
 planner = PathPlanner(path, C.Rmin, C.W);
 xs = (C.W / 2):C.W:(C.W / 2 + C.W * (C.N - 1));
-robot = DrawableRobot(-C.W, RL / 2, pi/2, C.Rw, C.L, C.Gmax, C.Vmax, C.Ld);
-nodes = [-C.W, xs, xs, -C.W;
-  (RL / 2), zeros(1, C.N), (zeros(1, C.N) + RL), (RL / 2)];
+robot = DrawableRobot(-4 * C.W, RL / 2, pi/2, C.Rw, C.L, C.Gmax, C.Vmax, C.Ld);
+nodes = [robot.x, xs, xs, robot.x;
+  robot.y, zeros(1, C.N), (zeros(1, C.N) + RL), robot.y];
 
 fprintf('Start and End: (%0.2f, %0.2f) (%0.2f, %0.2f)\n', nodes(X, 1), nodes(Y, 1),...
   nodes(X, endI), nodes(Y, endI))
@@ -186,7 +187,7 @@ if bad == 0
   plot(pathPoints(X, 22:nPoints), pathPoints(Y, 22:nPoints), 'b.')
   
   planner1 = PathPlanner(pathPoints(:, 1:(nPoints+25)));
-  frame = [-10, 30, -12.5, 27.5];
+  frame = [-15.5, 30, -12.5, 33];
   if nodes(Y, route(2)) == 0
     robot.theta = -pi/2;
   end
@@ -203,6 +204,7 @@ if bad == 0
   stepErr = zeros(1, initAlloc);
 
   prev = 1;
+  lookAhead = plot(pathPoints(X, 3), pathPoints(Y, 3), 'k*');
   for t = 0:C.DT:(C.T - C.DT)
     redraw = mod(t, C.redrawT) == 0;
     if redraw
@@ -213,6 +215,8 @@ if bad == 0
       stepErr = [stepErr, zeros(1, length(stepErr))];
     end
     [gammaD, err, prev, errX, errY] = planner1.FirstFeasiblePoint(robot, prev);
+    delete(lookAhead)
+    lookAhead = plot(pathPoints(X, prev), pathPoints(Y, prev), 'k*');
     stepErr(k) = err;
     k = k + 1;
 

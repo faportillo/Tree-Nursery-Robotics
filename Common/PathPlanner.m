@@ -35,8 +35,10 @@ classdef PathPlanner < handle
       first = previousIndex;
       startMin = Inf;
       X = 1; Y = 2;
-      endI = min(obj.nPoints, previousIndex+20);
-      for i = previousIndex:endI
+      stride = 13;
+      endI = min(obj.nPoints, previousIndex+stride);
+      startI = max(previousIndex-stride, 1);
+      for i = startI:endI
         di = sqrt(abs(obj.path_(X, i) - robot.x) ^ 2 + ...
                   abs(obj.path_(Y, i) - robot.y) ^ 2 );
         if di < trackErr
@@ -136,7 +138,7 @@ classdef PathPlanner < handle
           [(rm * sin(anglesL)), (rm * sin(anglesM) - gArcOffset), ...
            (rm * sin(anglesR))] + y];
         
-        if strcmp(type, 'br')       %bottom west (left) turn
+        if strcmp(type, 'bl')       %bottom west (left) turn
           points = fliplr(points);
         end
       else
@@ -154,7 +156,7 @@ classdef PathPlanner < handle
           [(rm * sin(anglesL)), (rm * sin(anglesM) + gArcOffset), ...
            (rm * sin(anglesR))] + y];
         
-        if strcmp(type, 'tr')       %bottom west (left) turn
+        if strcmp(type, 'tl')       %bottom west (left) turn
           points = fliplr(points);
         end
       end
