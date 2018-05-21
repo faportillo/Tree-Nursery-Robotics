@@ -32,19 +32,36 @@ C = struct('W', 2.5,...   %row width [m]
   'HUGE', 10^9,...        %
   'R', 500,...            %rows
   'C', 500,...            %columns
+  'Fcr', 1.0,...          %repelling force constant
+  'Fct', 1.0,...          %attracting force constant
   'ptsPerMeter', 2,...    %
   'posEpsilon', 0.2,...   %position requirement
-  'endI', endI,...        %number of nodes
   'Rmin', L / tan(Gmax),... %Min turning radius
   'MULT', 5, ...          %multiplier
   'redrawT',0.2 / Vm,...  %# of DT to redraw robot for pursuit controller
   'aniPause', 0.001 ...   %animation pause
   );
 
-grid = ones(R, C);
-
-
-
+map=zeros(C.R, C.C);
+Xmax = 150; Ymax = 150;
+[oddsGrid, occGrid] = getObstacleField(map, C.R, C.C, Xmax, Ymax);
+%{
+imagesc(occGrid)
+colorbar
+figure
+imagesc(oddsGrid)
+colorbar
+%}
+Fr = zeros(C.C, C.R, 2);   % (x, y, {x, y})  third dim is vector xy components
+Ft = zeros(C.C, C.R, 2);   %attracting forces
+for y = 1:C.R
+  for x = 1:C.C
+    d = sqrt((x - robot.x)^2 + (y - robot.y)^2);
+    %[(x - robot.x);(y - robot.y)];
+    Ft(x, y, :) = C.Fct * [((x - robot.x) / d), ((y - robot.y) / d)];
+    Fr(x, y, :) = Ft(x, y, :) ./ C.Fct .* C.Fcr .* occGrid(y, x) ./ (d^2);
+  end
+end
 
 
 

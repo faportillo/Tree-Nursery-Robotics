@@ -2,12 +2,11 @@
 % -angleSpan/2 to +angleSpan/2 with step angleStep.
 % Given a bitmap (boolean occupancy grid with obstacles) with origin at (0,0) and uper NE corner (Xmax, Ymax), 
 % the result is a bitmap with detected obstacle pixels and free pixels.
-function p = updateLaserBeamBitmap(angle, range, Tl, R, C, Xmax, Ymax)
-global bitmap;
-
- %transform laser origin to world frame
-P1 = Tl*[0 0 1]'; 
-x1=P1(1);     y1=P1(2); 
+function newGrid = updateLaserBeamBitmap(grid, angle, range, Tl, R, C, Xmax, Ymax)
+    newGrid = grid;
+     %transform laser origin to world frame
+    P1 = Tl*[0 0 1]'; 
+    x1=P1(1);     y1=P1(2); 
 
     %first produce target point for laser in scanner frame
     Xl = range * cos(angle);
@@ -38,8 +37,9 @@ x1=P1(1);     y1=P1(2);
     [ I2, J2 ] = XYtoIJ(x2, y2, Xmax, Ymax, R, C); % obstacle pixel
     
     %update detected obstacle pixel
-    bitmap(I2, J2) = 1;
+    newGrid(I2, J2) = 1;
     % use bresenham to find all pixels that are between laser and obstacle
+   %{
    l=bresenhamFast(I1,J1,I2,J2); 
    [l1 l2]=size(l);
    for k=1:length(l)-1 %skip the target pixel
@@ -47,6 +47,6 @@ x1=P1(1);     y1=P1(2);
    end
      
    p = length(l) + 1;  % number of updated pixels
-
+   %}
 end
 
