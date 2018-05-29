@@ -57,16 +57,25 @@ classdef DrawableRobot < handle
       %  0.7933, 0.88]'*2*pi;
     end
     
-    function DrawRobot(obj, frame)
+    function DrawRobot(obj, frame, exact)
+      if nargin < 2
+        fprintf('DrawRobot: Must have frame to draw robot.\n')
+      end
       fPoints = obj.framepoints + obj.theta;
       obj.robotFrameX = cos(fPoints) * 0.8 + obj.x;
       obj.robotFrameY = sin(fPoints) + obj.y;
       
       obj.plotHandle = fill(obj.robotFrameX, obj.robotFrameY, 'r');
-      frameSize = max(abs(frame(2) - frame(1)), abs(frame(4) - frame(3)));
-      xlim([frame(1), frame(1) + frameSize])
-      ylim([frame(3), frame(3) + frameSize])
-      axis square
+      if nargin > 2 && exact
+        xlim([frame(1), frame(2)])
+        ylim([frame(3), frame(4)])
+        axis square
+      else
+        frameSize = max(abs(frame(2) - frame(1)), abs(frame(4) - frame(3)));
+        xlim([frame(1), frame(1) + frameSize])
+        ylim([frame(3), frame(3) + frameSize])
+        axis square
+      end
     end
     
     function MoveRobot(obj, dx, dy, dTheta, dv, dGamma)
