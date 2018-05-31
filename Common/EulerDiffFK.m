@@ -9,8 +9,8 @@ cosT = cos(theta);
 sinT = sin(theta);
 
 %change in position in world frame
-dx = dt * (V * cosT - Vy * sinT);
+dx = dt * (V * cosT + Vy * sinT);
 dy = dt * (V * sinT + Vy * cosT);
-omega = (Vl - Vr) / l;            %rotational velocity
+omega = -(Vl - Vr) / l;            %rotational velocity
 dTheta = omega * dt;              %change in angle to world frame
 end

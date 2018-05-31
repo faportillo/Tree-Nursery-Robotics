@@ -10,6 +10,7 @@ classdef DrawableRobot < handle
     gammaMax   %max steering angle [radians]
     vMax       %max linear speed   [m/s]
     Ld         %min distance to first navigatable point [meters]
+    dim        %[length, width] of robot [meters]
   end
   properties (SetAccess = private)
     plotHandle
@@ -19,6 +20,7 @@ classdef DrawableRobot < handle
     posEpsilon   %position allowed error [meters]
     velEpsilon   %velocity allowed error [m/s]
     reverse
+    pi_2
   end
   methods
     function obj = DrawableRobot(varargin)
@@ -46,11 +48,13 @@ classdef DrawableRobot < handle
         obj.gammaMax = pi/4;
         obj.vMax = 5;
       end
+      obj.dim = [1, 0.8];
       obj.posEpsilon = 0.15;
       obj.velEpsilon = 0.05;
       obj.gamma = 0;
       obj.v = 0;
       obj.reverse = false;
+      obj.pi_2 = pi/2;
       obj.framepoints = [0.12, 0.2067, 0.2933, 0.38, 0.6, 0.7, 0.8, ...
         0.9]'*2*pi - pi/2;
       %obj.framepoints = [0.12, 0.2067, 0.2933, 0.38, 0.62, 0.7067,...
@@ -62,8 +66,8 @@ classdef DrawableRobot < handle
         fprintf('DrawRobot: Must have frame to draw robot.\n')
       end
       fPoints = obj.framepoints + obj.theta;
-      obj.robotFrameX = cos(fPoints) * 0.8 + obj.x;
-      obj.robotFrameY = sin(fPoints) + obj.y;
+      obj.robotFrameX = obj.dim(2) * cos(fPoints) + obj.x;
+      obj.robotFrameY = obj.dim(1) * sin(fPoints) + obj.y;
       
       obj.plotHandle = fill(obj.robotFrameX, obj.robotFrameY, 'r');
       if nargin > 2 && exact
@@ -102,6 +106,7 @@ classdef DrawableRobot < handle
         obj.theta, dt);
       obj.MoveRobot(dx, dy, dTheta)
       obj.RedrawRobot(frame, prevPos, pathPoint)
+      
     end
     
     function MoveEulerDiff_RedrawRobot(obj, Wl, Wr, dt, Sl, Sr, skidD, frame,...
@@ -111,6 +116,20 @@ classdef DrawableRobot < handle
         obj.theta, dt, Sl, Sr, skidD);
       obj.MoveRobot(dx, dy, dTheta)
       obj.RedrawRobot(frame, prevPos, pathPoint)
+    end
+    
+    function MoveEulerDiff_MaybeRedraw(obj, Wl, Wr, C, Sl, Sr, skidD, frame,...
+        pathPoint, prevPos, redraw)
+      if nargin < 8
+        prevPos = [obj.x, obj.y];
+      end
+      [dx, dy, dTheta] = EulerDiffFK(Wl, Wr, obj.Rw, obj.l,  obj.theta, ...
+        C.DT, Sl, Sr, skidD);
+      obj.MoveRobot(dx, dy, dTheta)
+      if nargin < 8 || redraw
+        obj.RedrawRobot(frame, prevPos, pathPoint)
+        pause(C.aniPause)
+      end
     end
     
     function MoveEulerAck_RedrawRobot(obj, gammaD, vd, C, s, skidDR, skidDF,...
@@ -215,7 +234,7 @@ classdef DrawableRobot < handle
     
     %------------------HELPERS----------------------------
     function result = inFront(obj, point)
-      Tr = se2(obj.x, obj.y, obj.theta - pi/2);
+      Tr = se2(obj.x, obj.y, obj.theta - obj.pi_2);
       Pr = homtrans(inv(Tr), point);
       if Pr(2) > 0
         result = true;
@@ -225,12 +244,12 @@ classdef DrawableRobot < handle
     end
     
     function wPoint = WorldPoint(obj, point)
-      Tr = se2(obj.x, obj.y, obj.theta - pi/2);
+      Tr = se2(obj.x, obj.y, obj.theta - obj.pi_2);
       wPoint = homtrans(Tr, point);
     end
     
     function rPoint = RobotPoint(obj, point)
-      Tr = se2(obj.x, obj.y, obj.theta - pi/2);
+      Tr = se2(obj.x, obj.y, obj.theta - obj.pi_2);
       rPoint = homtrans(inv(Tr), point);
     end
     

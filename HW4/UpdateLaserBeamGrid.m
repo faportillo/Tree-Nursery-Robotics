@@ -8,7 +8,7 @@
 function grid = UpdateLaserBeamGrid(prevGrid, angle, range, Tl, R, C, Xmax, Ymax)
   global rangeMax;
   low = 0.1;
-  high = 0.9;
+  high = 6.0;
   grid = prevGrid;
 
   %transform laser origin to world frame
@@ -46,7 +46,7 @@ function grid = UpdateLaserBeamGrid(prevGrid, angle, range, Tl, R, C, Xmax, Ymax
   % use bresenham to find all pixels that are between laser and obstacle
   if range < rangeMax
     %update detected obstacle pixel
-    grid(I2, J2) = grid(I2, J2) * high;
+    grid(I2, J2) = min(1, grid(I2, J2) * high);
   
     l=bresenhamFast(I1,J1,I2,J2); 
     %[l1 l2]=size(l);

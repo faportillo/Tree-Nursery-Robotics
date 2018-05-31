@@ -70,7 +70,7 @@ tt = 0 : dt : duration;
 %plot true path (blue)
 plot(tt,X_true,'--b.'); hold on;
 %plot sensed and estimated path when a running average filter is used.
-X_smooth = smoothdata(X_sensed);
+X_smooth = X_sensed;
 plot(tt,X_sensed,'-k.', tt, X_smooth, '-g.');
 %plot Kalman estimated path on same plot
 plot( tt,X_loc_estimate(1:length(tt)),'-r.');
