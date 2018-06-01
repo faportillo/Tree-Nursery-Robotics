@@ -10,7 +10,7 @@ clear
 close all
 
 RL = 20;      %meters
-Gmax = 30 * pi/180;
+Gmax = 60 * pi/180;
 L = 3;
 X = 1;
 Y = 2;
@@ -113,7 +113,7 @@ fprintf('Minimum Distance: %f\n', results.minDist)
 fprintf('Route: ')
 disp(route)
 fprintf('\n')
-bad = ValidPath(route, C);
+bad = ValidPath(route, C.N);
 pathPoints = zeros(2, initAlloc);
 nPoints = 21;
 upY =   linspace(0, RL, RL * C.ptsPerMeter);
