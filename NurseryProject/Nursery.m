@@ -35,6 +35,10 @@ classdef Nursery < handle
       valid = ValidPath(obj.nodeRoute, C);
     end
     
+    function success = WriteResults(obj, filename)
+      success = true;
+    end
+    
     %defined in separate file
     success = PlanPath(obj)
   end
@@ -46,5 +50,6 @@ classdef Nursery < handle
       K = 10;           %temperary value until file format is known
       map = zeros(C.C, C.R);
     end
+    
   end
 end
