@@ -1,4 +1,5 @@
-clear all;
+%clear all;
+function [K, x_im, y_im] = generateNursery()
 rng('shuffle'); %init random generator
 global bitmap;
 
@@ -39,6 +40,4 @@ for j=1:K
     end
 end
 
-figure(1); 
-imagesc(x_im, y_im, flipud(bitmap)); %imagesc flips the bitmap rows, so correct this
-set(gca,'YDir','normal');
+end

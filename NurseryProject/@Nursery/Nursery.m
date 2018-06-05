@@ -11,15 +11,31 @@ classdef Nursery < handle
   end
   properties (SetAccess = private)
     nodeRoute
+    treeMeasurements
+    treesInRow
+    X_                  %index of X coordinate for tree
+    Y_                  %index of Y coordinate for tree
+    D_                  %index of diameter of tree
+    allocTreesInRow;
   end
   methods
     function obj = Nursery(map, K, rowLength, rowWidth, nodes, robo)
+      obj.allocTreesInRow = 10;
       obj.gtMap = map;
       obj.nRows = K;
       obj.rowL = rowLength;
       obj.rowW = rowWidth;
       obj.rowNodes = nodes;
       obj.robot = robo;
+      obj.treeMeasurements = cell(1, K);
+      obj.treesInRow = zeros(1, K);
+      obj.X_ = 1;
+      obj.Y_ = 2;
+      obj.D_ = 3;
+      for i = 1:K
+        %allocate space for x,y,diameter for each tree in row
+        obj.treeMeasurements{i} = zeros(obj.allocTreesInRow, 3);
+      end
     end
     
     function valid = PlanRoute(obj, C)
@@ -36,7 +52,33 @@ classdef Nursery < handle
     end
     
     function success = WriteResults(obj, filename)
-      success = true;
+      x = obj.X_;
+      y = obj.Y_;
+      d = obj.D_;
+      fileID = fopen(filename, 'a');
+      if fileID >= 0
+        for r = 1:obj.nRows
+          fprintf(fileID, '%d\n', r);
+          for tree = 1:obj.treesInRow(r)
+            meas = obj.treeMeasurements{r}(tree, :);
+            fprintf(fileID, '%d,%d,%d,%0.2f\n', tree, meas(x), meas(y), meas(d));
+          end
+          fprintf(fileID, '\n');
+        end
+        success = true;
+      else
+        success = false;
+      end
+    end
+    
+    function AddTree(obj, x, y, diameter, row)
+      inRow = obj.treesInRow(row) + 1;
+      obj.treesInRow(row) = inRow;
+      if inRow > size(obj.treeMeasurements{row}, 1)
+        obj.treeMeasurements{row} = [obj.treeMeasurements{row}; ...
+                                     zeros(inRow - 1, 3)];
+      end
+      obj.treeMeasurements{row}(inRow, :) = [x, y, diameter];
     end
     
     %defined in separate file
@@ -44,12 +86,12 @@ classdef Nursery < handle
   end
   methods (Static)
     %defined in separate file
-    nodes = MakeNodes()
-    
+    [nodes, DMAT] = MakeNodes(N)
+    %{
     function [K, map] = InterpretInput(file, C)
       K = 10;           %temperary value until file format is known
       map = zeros(C.C, C.R);
     end
-    
+    %}
   end
 end

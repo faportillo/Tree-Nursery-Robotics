@@ -3,3 +3,4 @@
 **/*.asv
 **/*.zip
 **/*.m~
+**/testResults.txt
