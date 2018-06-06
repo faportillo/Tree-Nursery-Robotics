@@ -43,6 +43,14 @@ s = 0;             %slip
 skidDR = 0;        %rear skid
 skidDF = 0;        %front skid
 
+Qmax = zeros(1, 5);
+Qmax(X) = Inf; Qmax(Y) = Inf; Qmax(THETA) = Inf;
+Qmax(GAMMA) = Gmax; Qmax(VEL) = vd;
+Qmin = -Qmax; % symmetrical negative constraints for minimum values
+% Control constraints
+Umax=[Gmax vd]';
+Umin= -Umax;
+
 %constants struct
 C = struct('W', 3,...     %center-to-center row distance [m]
   'swX', 20, ...          %x offset of southwest corner of grid of trees
@@ -101,10 +109,7 @@ lookAhead = plot(pathPoints(X, 3), pathPoints(Y, 3), 'k*');
 
 %-----------------------MAIN MOTION LOOP---------------------------------
 for t = 0:C.DT:(C.T - C.DT)
-  redraw = mod(t, C.redrawT) == 0;
-  if redraw
-    prevPos = [robot.x, robot.y];
-  end
+  redraw = mod(t, C.redrawT) == 0;  %whether to redraw this iteration or not
   
   [gammaD, ~, prev, errX, errY] = planner.FirstFeasiblePoint(robot, prev);
   delete(lookAhead)
@@ -112,7 +117,18 @@ for t = 0:C.DT:(C.T - C.DT)
   lookAhead = plot(pathPoints(X, prev), pathPoints(Y, prev), 'k*');
 
   robot.Move_EulerAckFK(gammaD, vd, C, s, skidDR, skidDF, tauV, tauG);
+  %{
+  robot_odo NOT QUITE WORKING YET
+  [q, odo] = robot_odo([robot.x; robot.y; robot.theta; robot.gamma; robot.v],...
+    [gammaD; vd], Umin, Umax, Qmin, Qmax, L, tauG, tauV);
+  robot.x = q(X);
+  robot.y = q(Y);
+  robot.theta = q(THETA);
+  robot.gamma = q(GAMMA);
+  robot.v = q(VEL);
+  %}
   if redraw
+    prevPos = [robot.x, robot.y];
     robot.RedrawRobot(frame, prevPos, pathPoint)
     pause(C.aniPause)
   end
@@ -139,4 +155,4 @@ for i = 1:(20*K)
 end
 nursery.WriteResults('testResults.txt');
 
-fprintf('Done')
+fprintf('))) Done (((\n')

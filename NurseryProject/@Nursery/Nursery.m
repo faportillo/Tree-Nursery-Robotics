@@ -55,7 +55,7 @@ classdef Nursery < handle
       x = obj.X_;
       y = obj.Y_;
       d = obj.D_;
-      fileID = fopen(filename, 'a');
+      fileID = fopen(filename, 'w');
       if fileID >= 0
         for r = 1:obj.nRows
           fprintf(fileID, '%d\n', r);
@@ -69,6 +69,7 @@ classdef Nursery < handle
       else
         success = false;
       end
+      fclose(fileID);
     end
     
     function AddTree(obj, x, y, diameter, row)
