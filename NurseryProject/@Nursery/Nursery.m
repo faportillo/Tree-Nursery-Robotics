@@ -16,7 +16,7 @@ classdef Nursery < handle
     X_                  %index of X coordinate for tree
     Y_                  %index of Y coordinate for tree
     D_                  %index of diameter of tree
-    allocTreesInRow;
+    allocTreesInRow
   end
   methods
     function obj = Nursery(map, K, rowLength, rowWidth, nodes, robo)
@@ -82,11 +82,11 @@ classdef Nursery < handle
     end
     
     %defined in separate file
-    success = PlanPath(obj)
+    success = PlanPath(obj, DMAT, plotPath, C)
   end
   methods (Static)
     %defined in separate file
-    [nodes, DMAT] = MakeNodes(N)
+    [nodes, DMAT] = MakeNodes(C)
     %{
     function [K, map] = InterpretInput(file, C)
       K = 10;           %temperary value until file format is known

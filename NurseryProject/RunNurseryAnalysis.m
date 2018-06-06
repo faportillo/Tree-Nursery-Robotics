@@ -9,7 +9,7 @@ clear
 close all
 
 PLOT_REAL_TREES = true;
-start = [5,5];
+start = [0,0];
 
 global bitmap;
 [K, x_im, y_im] = generateNursery();
@@ -20,8 +20,6 @@ if PLOT_REAL_TREES
   imagesc(x_im, y_im, flipud(bitmap)); %imagesc flips the bitmap rows, so correct this
   set(gca,'YDir','normal');
 end
-RC = struct('R', 500, 'C', 500);
-
 
 
 RL = 20;      %meters
@@ -30,11 +28,16 @@ L = 3;
 X = 1;
 Y = 2;
 Vm = 4;
+xMax = 100; yMax = 100;
+span = pi;
 
 initAlloc = 1000;
 endI = 2 * K + 2;
-C = struct('W', 2.5,...   %row width [m]
+C = struct('W', 3,...     %center-to-center row distance [m]
+  'swX', 20, ...          %
+  'swY', 20, ...          %
   'L', L,...              %wheelbase [m]
+  'start', start, ...     %start coordinates
   'Rw', 0.5,...           %radius [m]
   'Vmax', Vm,...          %v max     [m/s]
   'Gmax', Gmax,...        %gamma max [radians]
@@ -42,23 +45,32 @@ C = struct('W', 2.5,...   %row width [m]
   'dt',   0.001,...       %seconds
   'DT',   0.01,...        %seconds
   'T',    600.0,...       %total move to point time allowed
-  'RL', 20, ...           %
-  'HUGE', 10^9,...        %
-  'rowLength', 20, ...    %length of row [m]
-  'rowWidth', 3, ...      %center-to-center row width [m]
-  'ptsPerMeter', 2,...    %
+  'RL', 20, ...           %row length [m]
+  'HUGE', 10^9,...        %discouraging cost
+  'ptsPerMeter', 2,...    %points to plot per meter
   'posEpsilon', 0.2,...   %position requirement
+  'rangeMax' , 200, ...   %max range of laser
+  'angleSpan', span, ...  %angle span of laser sweep
+  'angleStep', span/360, ... %step of laser sweep
+  'occThresh', 0.5,...    %occupancy threshold
   'endI', endI,...        %number of nodes
+  'K', K, ...             %tree rows
   'Rmin', L / tan(Gmax),... %Min turning radius
   'MULT', 5, ...          %multiplier
   'redrawT',0.2 / Vm,...  %# of DT to redraw robot for pursuit controller
   'aniPause', 0.001 ...   %animation pause
   );
 
-[nodes, DMAT] = Nursery.MakeNodes(K);
-robot = DrawableRobot(start(X), start(Y), pi/2, C.Rw, C.L, C.Gmax, C.Vmax, ...
+[nodes, DMAT] = Nursery.MakeNodes(C);
+robot = DrawableRobot(0, 0, pi/2, C.Rw, C.L, C.Gmax, C.Vmax, ...
   C.Ld);
-nursery = Nursery(bitmap, K, C.rowLength, C. rowWidth, nodes, robot);
+nursery = Nursery(bitmap, K, C.RL, C.W, nodes, robot);
+
+
+success = nursery.PlanPath(DMAT, true, C);
+frame = [-1, 50, -1, 50];
+robot.DrawRobot(frame)
+planner = PathPlanner(nursery.robotPath);
 
 %test of my functions    -Tim
 diam = 0.3 .* rand(20 * K, 1) + 0.2;
