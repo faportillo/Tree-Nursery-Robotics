@@ -21,7 +21,9 @@ disp(route)
 fprintf('\n')
 bad = ValidPath(route, C.K);
 pathPoints = zeros(2, initAlloc);
-nPoints = 21;
+toP = 29;
+fromP = 34;
+nPoints = toP + 1;
 upY =   linspace(swY, C.RL + swY, C.RL * C.ptsPerMeter);
 downY = linspace(C.RL + swY, swY, C.RL * C.ptsPerMeter);
 
@@ -31,10 +33,18 @@ if bad == 0
   
   %first point is first node
   pathPoints(:, 1) = nodes(:, 1);
-  %square path to start point               TODO: Tim will make this pi turn
-  pathPoints(:, 2:nPoints) = [(zeros(1, 10) +  nodes(X, 1)), ...
-    linspace(nodes(X, 1), nodes(X, route(2)), 10); linspace(nodes(Y, 1), ...
-    nodes(Y, route(2)), 10), (zeros(1, 10) +  nodes(Y, route(2)))];
+  %square path to start point               TODO: Tim may make this a pi turn
+  horiz = nodes(Y, route(2));
+  if horiz == swY
+    hLine = swY - 6;
+  else
+    hLine = swY + C.RL + 6;
+  end
+  pathPoints(:, 2:nPoints) = [(zeros(1, 15) +  nodes(X, 1)), ...
+    linspace(nodes(X, 1), nodes(X, route(2)), 10), ...
+    (zeros(1, 4) + nodes(X, route(2))); ...
+    linspace(nodes(Y, 1), hLine, 15), (zeros(1, 10) +  hLine), ...
+    linspace(hLine, horiz, 4)];
   
   for node = 3:2:(endI - 1)
     nI = route(node);
@@ -81,26 +91,35 @@ if bad == 0
 
   end
   
-  %square path to end point               TODO: Tim will make this pi turn
+  %square path to end point               TODO: Tim may make this a pi turn
   if nPoints+25 > length(pathPoints)     %reallocate logarithmically
     pathPoints = [pathPoints, zeros(2, length(pathPoints))];
   end
-  pathPoints(:, (nPoints+1):(nPoints+25)) = [linspace(nodes(X, route(...
-    endI - 1)), nodes(X, 1), 10), (zeros(1, 15) + nodes(X, 1)); ...
-    (zeros(1, 10) + nodes(Y, route(endI - 1))), linspace(nodes(Y, ...
-    route(endI - 1)), nodes(Y, 1), 15)];
+  horiz = nodes(Y, route(endI - 1));
+  if horiz == swY
+    hLine = swY - 6;
+  else
+    hLine = swY + C.RL + 6;
+  end
+  pathPoints(:, (nPoints+1):(nPoints+fromP)) = [(zeros(1, 4) + nodes(X, ...
+    route(endI - 1))), linspace(nodes(X, route(endI - 1)), nodes(X, 1), 10), ...
+    (zeros(1, 20) + nodes(X, 1)); ...
+    linspace(nodes(Y, route(endI - 1)), hLine, 4), (zeros(1, 10) + hLine), ...
+    linspace(hLine, nodes(Y, 1), 20)];
   
   if plotPath
     for i = 0:C.K
       plot(C.W * [i,(i+1e-6)] + swX, swY + [0,C.RL], 'r-')
       hold on
     end
-    plot(pathPoints(X, 22:nPoints), pathPoints(Y, 22:nPoints), 'b.')
-    plot(pathPoints(X, 1:21), pathPoints(Y, 1:21), 'g.')
-    plot(pathPoints(X, (nPoints+1):(nPoints+25)), ...
-      pathPoints(Y, (nPoints+1):(nPoints+25)), 'k.')
+    
+    plot(pathPoints(X, (toP + 2):nPoints), pathPoints(Y, (toP + 2):nPoints), ...
+      'b.')
+    plot(pathPoints(X, 1:(toP + 1)), pathPoints(Y, 1:(toP + 1)), 'g.')
+    plot(pathPoints(X, (nPoints+1):(nPoints+fromP)), ...
+      pathPoints(Y, (nPoints+1):(nPoints+fromP)), 'k.')
   end
-  obj.robotPath = pathPoints(:, 1:(nPoints+25));
+  obj.robotPath = pathPoints(:, 1:(nPoints+fromP));
   
 else
   fprintf('Bad Pairs: %d\nTry Running Again...\n', bad)

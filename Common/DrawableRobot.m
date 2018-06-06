@@ -48,7 +48,7 @@ classdef DrawableRobot < handle
         obj.gammaMax = pi/4;
         obj.vMax = 5;
       end
-      obj.dim = [1, 0.8];
+      obj.dim = [1, 0.8]; %2 meters long, 1.6 m wide
       obj.posEpsilon = 0.15;
       obj.velEpsilon = 0.05;
       obj.gamma = 0;
