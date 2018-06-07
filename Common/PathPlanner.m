@@ -58,9 +58,11 @@ classdef PathPlanner < handle
       Ey = Pr(X);
       Ex = -Pr(Y);
       steerAngle = atan(robot.l * 2 * Ey / (robot.Ld ^ 2));
+      %{
       if first ~= previousIndex
         fprintf('.')
       end
+      %}
     end
     
     function points = GenerateTurnPath(obj, mult, x, y, type, ...

@@ -16,7 +16,7 @@ classdef Nursery < handle
     X_                  %index of X coordinate for tree
     Y_                  %index of Y coordinate for tree
     D_                  %index of diameter of tree
-    allocTreesInRow;
+    allocTreesInRow
   end
   methods
     function obj = Nursery(map, K, rowLength, rowWidth, nodes, robo)
@@ -55,7 +55,7 @@ classdef Nursery < handle
       x = obj.X_;
       y = obj.Y_;
       d = obj.D_;
-      fileID = fopen(filename, 'a');
+      fileID = fopen(filename, 'w');
       if fileID >= 0
         for r = 1:obj.nRows
           fprintf(fileID, '%d\n', r);
@@ -69,6 +69,7 @@ classdef Nursery < handle
       else
         success = false;
       end
+      fclose(fileID);
     end
     
     function AddTree(obj, x, y, diameter, row)
@@ -82,11 +83,11 @@ classdef Nursery < handle
     end
     
     %defined in separate file
-    success = PlanPath(obj)
+    success = PlanPath(obj, DMAT, plotPath, C)
   end
   methods (Static)
     %defined in separate file
-    [nodes, DMAT] = MakeNodes(N)
+    [nodes, DMAT] = MakeNodes(C)
     %{
     function [K, map] = InterpretInput(file, C)
       K = 10;           %temperary value until file format is known
