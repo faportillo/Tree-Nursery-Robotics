@@ -7,6 +7,7 @@
 function p = updateLaserBeamGrid(angle, range, Tl, R, C, Xmax, Ymax)
 global occ_grid;
 global Pfree; global Pocc;
+global bitmap;
 
 %transform laser origin to world frame
 P1 = Tl*[0 0 1]';
@@ -49,13 +50,16 @@ if (I2<1) || (J2<1) || I2>R || J2>C
 end
 %update odds for detected target pixel; measurement suggests it is occupied. 
 occ_grid(I2, J2) = occ_grid(I2, J2) * Pocc/(1-Pocc);
+bitmap(I2, J2) = occ_grid(I2, J2)/(1+occ_grid(I2, J2)); % update with probability
 % use bresenham to find all pixels that are between laser and obstacle;
 % measurement suggests they are in free space (no obstacles)
 l=bresenhamFast(I1,J1,I2,J2);
 %[l1 l2]=size(l);
 for k=1:length(l)-1 %skip the target pixel
     occ_grid(l(k,1),l(k,2)) = occ_grid(l(k,1),l(k,2)) *  Pfree/(1-Pfree);
+    bitmap(l(k,1),l(k,2)) = occ_grid(l(k,1),l(k,2))/(1+occ_grid(l(k,1),l(k,2))); % update with probability
 end
+
 
 p = length(l) + 1;  % number of updated pixels
 
