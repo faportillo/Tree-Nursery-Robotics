@@ -14,6 +14,8 @@ PRINT_GRID = true;
 vd = 4;              %max velocity [m/s]
 
 global bitmap;
+global dT;
+global DT;
 [K, x_im, y_im] = generateNursery();
 
 
@@ -42,6 +44,8 @@ tauV = 0.2;        %velocity lag
 s = 0;             %slip
 skidDR = 0;        %rear skid
 skidDF = 0;        %front skid
+dT = 0.001;
+DT = 0.01;
 
 Qmax = zeros(1, 5);
 Qmax(X) = Inf; Qmax(Y) = Inf; Qmax(THETA) = Inf;
@@ -61,8 +65,8 @@ C = struct('W', 3,...     %center-to-center row distance [m]
   'Vmax', vd,...          %v max     [m/s]
   'Gmax', Gmax,...        %gamma max [radians]
   'Ld',   2.2,...         %min distance to first navigatable point [meters]
-  'dt',   0.001,...       %seconds
-  'DT',   0.01,...        %seconds
+  'dt',   dT,...       %seconds
+  'DT',   DT,...        %seconds
   'T',    600.0,...       %total move to point time allowed
   'RL', 20, ...           %row length [m]
   'HUGE', 10^9,...        %discouraging cost
@@ -116,17 +120,17 @@ for t = 0:C.DT:(C.T - C.DT)
   %plot lookahead point
   lookAhead = plot(pathPoints(X, prev), pathPoints(Y, prev), 'k*');
 
-  robot.Move_EulerAckFK(gammaD, vd, C, s, skidDR, skidDF, tauV, tauG);
-  %{
-  robot_odo NOT QUITE WORKING YET
-  [q, odo] = robot_odo([robot.x; robot.y; robot.theta; robot.gamma; robot.v],...
-    [gammaD; vd], Umin, Umax, Qmin, Qmax, L, tauG, tauV);
+  %robot.Move_EulerAckFK(gammaD, vd, C, s, skidDR, skidDF, tauV, tauG);
+  
+  q0 = [robot.x; robot.y; robot.theta; robot.gamma; robot.v];
+  u = [gammaD; vd];
+  [q, odo] = robot_odo(q0, u, Umin, Umax, Qmin, Qmax, L, tauG, tauV);
   robot.x = q(X);
   robot.y = q(Y);
-  robot.theta = q(THETA);
+  robot.theta = robot.theta - (q(THETA) - robot.theta);
   robot.gamma = q(GAMMA);
   robot.v = q(VEL);
-  %}
+  
   if redraw
     prevPos = [robot.x, robot.y];
     robot.RedrawRobot(frame, prevPos, pathPoint)
