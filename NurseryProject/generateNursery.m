@@ -39,5 +39,5 @@ for j=1:K
         end
     end
 end
-
+imagesc(bitmap)
 end
