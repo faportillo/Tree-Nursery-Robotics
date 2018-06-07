@@ -65,8 +65,8 @@ C = struct('W', 3,...     %center-to-center row distance [m]
   'Vmax', vd,...          %v max     [m/s]
   'Gmax', Gmax,...        %gamma max [radians]
   'Ld',   2.2,...         %min distance to first navigatable point [meters]
-  'dt',   dT,...       %seconds
-  'DT',   DT,...        %seconds
+  'dt',   dT,...          %seconds
+  'DT',   DT,...          %seconds
   'T',    600.0,...       %total move to point time allowed
   'RL', 20, ...           %row length [m]
   'HUGE', 10^9,...        %discouraging cost
@@ -99,7 +99,7 @@ if success == false %genetic algorithm generated invalid path
   return;    %error is printed internally, exit program
 end
 
-frame = [-1, 50, -1, 50];
+frame = [-1, (C.swY + C.RL + 10), -1, (C.swX + C.W * C.K + 10)];
 robot.dim = [1.5, 1.2];    %3 meters long, 2.4 wide
 if PRINT_MAP
   robot.DrawRobot(frame)
@@ -131,7 +131,7 @@ for t = 0:C.DT:(C.T - C.DT)
   robot.gamma = q(GAMMA);
   robot.v = q(VEL);
   
-  if redraw
+  if redraw && PRINT_MAP
     prevPos = [robot.x, robot.y];
     robot.RedrawRobot(frame, prevPos, pathPoint)
     pause(C.aniPause)
