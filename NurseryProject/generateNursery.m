@@ -7,10 +7,10 @@ R = 5000; C = 5000; %numbers of rows and columns of bitmap
 bitmap = zeros(R, C); %initialize as empty
 
 K = 5; % number of tree rows running south-north direction
-M = 7; %maximum number of trees in each row
+M = 10; %maximum number of trees in each row
 W = 3; % distance between tree rows (m)
 D = 2; %distance between trees in the same row (m)
-Xmax = W*(K-1)+20; Ymax = Xmax;
+Xmax = W*(K-1)+40; Ymax = Xmax;
 gridResolution = Xmax/R;
 x_im=[0 Xmax]; y_im=[0 Ymax]; % to display image with proper axes
 
@@ -18,7 +18,7 @@ x = zeros(M, K); y= zeros(M, K); %allocate arrays that hold tree center coordina
 maxTreeRadius = 0.5; %(m)
 minTreeRadius = 0.2; %(m)
 
-x(1,1) = 10-W/2; y(1,1) = 10; %coordinates of bottom-left tree center (m)
+x(1,1) = 20-W/2; y(1,1) = 14; %coordinates of bottom-left tree center (m)
 j=1; % current tree row
 while (j<=K)
     for i = 2:M %create coordinates of centers of all trees in the row
@@ -27,7 +27,7 @@ while (j<=K)
     end
      % next row
     j = j+1;
-    x(1,j) = x(1,j-1) + W; y(1,j) = 10; 
+    x(1,j) = x(1,j-1) + W; y(1,j) = 14; 
 end
 % assign a random radius to each tree
 for j=1:K
@@ -39,5 +39,5 @@ for j=1:K
         end
     end
 end
-
+%imagesc(bitmap)
 end

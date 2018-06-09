@@ -4,10 +4,11 @@
 % An occupancy grid has pixels that contain odds.
 % The grid has origin at the SW corner(0,0) and extends to the NE corner (Xmax, Ymax),
 % The pixel odds along the laser beam, from source to 'range', at 'angle', are updated.
-function p = updateLaserBeamGrid(angle, range, Tl, R, C, Xmax, Ymax)
+function p = updateLaserBeamGrid(angle, range, Tl, R, C, rangeMax, Xmax, Ymax, po, pf)
 global occ_grid;
-global Pfree; global Pocc;
-global bitmap;
+%global Pfree; global Pocc;
+
+global prob_grid;
 
 %transform laser origin to world frame
 P1 = Tl*[0 0 1]';
@@ -49,19 +50,24 @@ if (I2<1) || (J2<1) || I2>R || J2>C
     disp('bitmap index out of range'); exit;
 end
 %update odds for detected target pixel; measurement suggests it is occupied. 
-occ_grid(I2, J2) = occ_grid(I2, J2) * Pocc/(1-Pocc);
-bitmap(I2, J2) = occ_grid(I2, J2)/(1+occ_grid(I2, J2)); % update with probability
+occ_grid(I2, J2) = occ_grid(I2, J2) * po;
+%if range < rangeMax
+  prob_grid(I2, J2) = occ_grid(I2, J2)/(1+occ_grid(I2, J2)); % update with probability
+%end
 % use bresenham to find all pixels that are between laser and obstacle;
 % measurement suggests they are in free space (no obstacles)
 l=bresenhamFast(I1,J1,I2,J2);
 %[l1 l2]=size(l);
 for k=1:length(l)-1 %skip the target pixel
-    occ_grid(l(k,1),l(k,2)) = occ_grid(l(k,1),l(k,2)) *  Pfree/(1-Pfree);
-    bitmap(l(k,1),l(k,2)) = occ_grid(l(k,1),l(k,2))/(1+occ_grid(l(k,1),l(k,2))); % update with probability
+  occ_grid(l(k,1),l(k,2)) = occ_grid(l(k,1),l(k,2)) * pf;
+ % if range < rangeMax
+    prob_grid(l(k,1),l(k,2)) = occ_grid(l(k,1),l(k,2)) / ...
+      (1+occ_grid(l(k,1),l(k,2))); % update with probability
+ % end
 end
 
-
 p = length(l) + 1;  % number of updated pixels
+
 
 end
 

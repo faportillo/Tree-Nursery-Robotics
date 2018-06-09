@@ -1,8 +1,10 @@
 function success = PlanPath(obj, DMAT, plotPath, C)  
 
+navGap = 5;
 X = 1;
 Y = 2;
-endI = C.endI;
+K = C.K + 1;
+endI = 2 * K + 2;
 initAlloc = 1000;
 nodes = obj.rowNodes;
 swX = C.swX; swY = C.swY;
@@ -19,7 +21,7 @@ fprintf('Minimum Distance: %f\n', results.minDist)
 fprintf('Route: ')
 disp(route)
 fprintf('\n')
-bad = ValidPath(route, C.K);
+bad = ValidPath(route, K);
 pathPoints = zeros(2, initAlloc);
 toP = 29;
 fromP = 34;
@@ -36,9 +38,9 @@ if bad == 0
   %square path to start point               TODO: Tim may make this a pi turn
   horiz = nodes(Y, route(2));
   if horiz == swY
-    hLine = swY - 6;
+    hLine = swY - navGap;
   else
-    hLine = swY + C.RL + 6;
+    hLine = swY + C.RL + navGap;
   end
   pathPoints(:, 2:nPoints) = [(zeros(1, 15) +  nodes(X, 1)), ...
     linspace(nodes(X, 1), nodes(X, route(2)), 10), ...
@@ -97,9 +99,9 @@ if bad == 0
   end
   horiz = nodes(Y, route(endI - 1));
   if horiz == swY
-    hLine = swY - 6;
+    hLine = swY - navGap;
   else
-    hLine = swY + C.RL + 6;
+    hLine = swY + C.RL + navGap;
   end
   pathPoints(:, (nPoints+1):(nPoints+fromP)) = [(zeros(1, 4) + nodes(X, ...
     route(endI - 1))), linspace(nodes(X, route(endI - 1)), nodes(X, 1), 10), ...
@@ -108,7 +110,7 @@ if bad == 0
     linspace(hLine, nodes(Y, 1), 20)];
   
   if plotPath
-    for i = 0:C.K
+    for i = 0:(C.K - 1)
       plot(C.W * [i,(i+1e-6)] + swX, swY + [0,C.RL], 'r-')
       hold on
     end
