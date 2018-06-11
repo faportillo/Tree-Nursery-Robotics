@@ -6,7 +6,7 @@ global bitmap;
 R = 5000; C = 5000; %numbers of rows and columns of bitmap
 bitmap = zeros(R, C); %initialize as empty
 
-K = 7; % number of tree rows running south-north direction
+K = 5; % number of tree rows running south-north direction
 M = 10; %maximum number of trees in each row
 W = 3; % distance between tree rows (m)
 D = 2; %distance between trees in the same row (m)
