@@ -5,6 +5,8 @@
 %}
 
 addpath '../Common'
+addpath '../Common/geom2d'
+addpath '../Common/geom2d/geom2d'
 clear
 close all
 
