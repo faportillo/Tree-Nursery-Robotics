@@ -131,7 +131,26 @@ if PRINT_MAP
   lookAhead = plot(pathPoints(X, 3), pathPoints(Y, 3), 'k*');
 end
 rescanT = 10 * C.redrawT;
-
+%% Find covariance matrices
+N = 10000; 
+wx = zeros(1,N);
+wy = zeros(1,N);
+wtheta = zeros(1,N);
+odo = zeros(N,2);
+q = [0 0 0 0 0]; %initialize a robot w/zero for all states.
+u = [0 0]; %initialize zero for steering and speed inputs.
+for i=1:N
+    [wx(i), wy(i), wtheta(i)] = GPS_CompassNoisy(q(X), q(Y), q(THETA));
+    [trash, odo(i,:)] = robot_odo(q, u, Umin, Umax, Qmin, Qmax, L, tauG, tauV); 
+end
+A = [wx; wy; wtheta]';
+B = [odo(:,1) odo(:,2)];
+W = cov(A); %covariance of sensor noise
+V = cov(B); %covariance of odometry noise
+%Initialize uncertainty matrix
+P = zeros(3,3);
+%initialize starting pose for the robot
+kPose = [0;0;0];
 %-----------------------MAIN MOTION LOOP---------------------------------
 for t = 0:C.DT:(C.T - C.DT)
   redraw = mod(t, C.redrawT) == 0;  %whether to redraw this iteration or not
