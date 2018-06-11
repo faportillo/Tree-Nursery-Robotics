@@ -152,7 +152,7 @@ V = cov(B); %covariance of odometry noise
 %Initialize uncertainty matrix
 P = zeros(3,3);
 %initialize starting pose for the robot
-kPose = [0;0;0];
+kPose = [start(X); start(Y); pi/2];
 %-----------------------MAIN MOTION LOOP---------------------------------
 for t = 0:C.DT:(C.T - C.DT)
   redraw = mod(t, C.redrawT) == 0;  %whether to redraw this iteration or not
@@ -170,25 +170,29 @@ for t = 0:C.DT:(C.T - C.DT)
   
   q0 = [robot.x; robot.y; robot.theta; robot.gamma; robot.v];
   
-  if scan
-%      for k = 1:2 % scanner rotates 90 degrees to the left and right - not sure this is allowed
-%      rotate = [-pi/2 pi/2];
-      Tl = se2(robot.x, robot.y, robot.theta);
-      p = laserScannerNoisy(C.angleSpan, C.angleStep, C.rangeMax, Tl, bitmap, Xmax, Ymax); 
-      p(:,2) = medfilt1(p(:,2));
-      for j=1:length(p)
-        angle = p(j,1); range = p(j,2);
-        n = updateLaserBeamGrid(angle, range, Tl, r, c, C.rangeMax, Xmax, Ymax, po, pf);
-      end
-      figure(2)
-      imagesc([frame(1) Xmax], [frame(3) Ymax], flipud(prob_grid)); %imagesc flips the bitmap rows, so correct this
-      set(gca,'YDir','normal');
-      pause(C.aniPause)
-%      end +rotate(k)
-  end
+%   if scan
+% %      for k = 1:2 % scanner rotates 90 degrees to the left and right - not sure this is allowed
+% %      rotate = [-pi/2 pi/2];
+%       Tl = se2(robot.x, robot.y, robot.theta);
+%       p = laserScannerNoisy(C.angleSpan, C.angleStep, C.rangeMax, Tl, bitmap, Xmax, Ymax); 
+%       p(:,2) = medfilt1(p(:,2));
+%       for j=1:length(p)
+%         angle = p(j,1); range = p(j,2);
+%         n = updateLaserBeamGrid(angle, range, Tl, r, c, C.rangeMax, Xmax, Ymax, po, pf);
+%       end
+%       figure(2)
+%       imagesc([frame(1) Xmax], [frame(3) Ymax], flipud(prob_grid)); %imagesc flips the bitmap rows, so correct this
+%       set(gca,'YDir','normal');
+%       pause(C.aniPause)
+% %      end +rotate(k)
+%   end
   
   u = [gammaD; vd];
   [q, odo] = robot_odo(q0, u, Umin, Umax, Qmin, Qmax, L, tauG, tauV);
+  [xsensed, ysensed, thetasensed] = GPS_CompassNoisy(q(X), q(Y), q(THETA));
+  z = [xsensed; ysensed; thetasensed];
+  [kPose, P] = nurseryEKF(kPose, odo, z, P, V, W)
+  
   robot.x = q(X);
   robot.y = q(Y);
   robot.theta = robot.theta - (q(THETA) - robot.theta);
