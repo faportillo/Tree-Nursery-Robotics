@@ -4,7 +4,7 @@ function [kPose, P] = nurseryEKF(kPose, odo, z, P, V, W)
 %updated covariance matrices
 
 %kPose -> kalman filter pose
-%odo -> [distance change, angle change] from model
+%odo -> [distance change, angle change]' column vector from model
 %z -> [x, y, theta]' column vector from gps/compass noisy
 %P -> Estimate of state uncertainty
 %V -> estimate of process noise covariance
@@ -17,10 +17,12 @@ dDist = odo(1);
 dTheta = odo(2);
 
 %Estimate the new state w/ nonlinear dead reckoning
-kPose = [kPose(1) + odo(1)*cos(kPose(3)+odo(1)); kPose(2) + odo(1)*cos(kPose(3)*odo(1)); kPose(3) + odo(2)];
+kPose = [kPose(1) + odo(1)*cos(kPose(3)); kPose(2) + odo(1)*cos(kPose(3)); kPose(3) + odo(2)];
 %Calculate Jacobians
-Fx = [1 0 -dDist-sin(theta+dTheta); 0 1 dDist*cos(theta+dTheta); 0 0 1];
-Fv = [cos(theta+dTheta)  -dDist*sin(theta+dTheta); sin(theta + dTheta) dDist*cos(theta+dTheta); 0 1];
+Fx = [1 0 -dDist*sin(theta); 0 1 dDist*cos(theta); 0 0 1];
+Fv = [cos(theta)  0; sin(theta) 0; 0 1];
+%estimate new linearized state
+%kPose = kPose + Fx*(x_nonlin - kPose) + Fv*odo;
 %Update the uncertainty
 P = Fx*P*transpose(Fx) + Fv*V*transpose(Fv);
 %Innovation covariance
