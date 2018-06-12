@@ -184,10 +184,12 @@ for t = 0:C.DT:(C.T - C.DT)
   
   [kPose, P] = nurseryEKF(kPose, odo, z, P, V, W);
   %printf diff between true pose and estimate
+  %{
   fprintf('%2.2f, %2.2f, D:%2.2f   %2.2f, %2.2f, D:%2.2f   %2.2f, %2.2f, D:%2.2f\n',...
     savePose(X), kPose(X), savePose(X) - kPose(X), savePose(Y), ...
     kPose(Y), savePose(Y) - kPose(Y), savePose(THETA), kPose(THETA), ...
     savePose(THETA) - kPose(THETA));
+  %}
   
   %use estimated position for navigation controller
   robot.x = kPose(X);
@@ -237,13 +239,8 @@ if PRINT_MAP
 end
 
 %Process prob_grid and add trees to nursery tree list
-nursery = process_grid(prob_grid,nursery,K,Xmax,Ymax,r,c);
+nursery.ProcessGrid(prob_grid, Xmax, Ymax, r, c);
 
-%test of output functions    -Tim
-% diam = 0.3 .* rand(20 * K, 1) + 0.2;
-% for i = 1:(20*K)
-%   nursery.AddTree(i, i*2, diam(i), floor((i-1) / 20) + 1)
-% end
 nursery.WriteResults('testResults.txt');
 
 fprintf('))) Done (((\n')

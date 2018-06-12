@@ -61,7 +61,7 @@ classdef Nursery < handle
           fprintf(fileID, '%d\n', r);
           for tree = 1:obj.treesInRow(r)
             meas = obj.treeMeasurements{r}(tree, :);
-            fprintf(fileID, '%d,%d,%d,%0.2f\n', tree, meas(x), meas(y), meas(d));
+            fprintf(fileID, '%d,%0.2f,%0.2f,%0.2f\n', tree, meas(x), meas(y), meas(d));
           end
           fprintf(fileID, '\n');
         end
@@ -80,10 +80,14 @@ classdef Nursery < handle
                                      zeros(inRow - 1, 3)];
       end
       obj.treeMeasurements{row}(inRow, :) = [x, y, diameter];
+      %make sure trees are sorted by y coordinate within each row list
+      obj.treeMeasurements{row}(1:inRow, :) = ...
+        sortrows(obj.treeMeasurements{row}(1:inRow, :), 2);
     end
     
     %defined in separate file
     success = PlanPath(obj, DMAT, plotPath, C)
+    ProcessGrid(obj, grid, Xmax, Ymax, R, C)
   end
   methods (Static)
     %defined in separate file
