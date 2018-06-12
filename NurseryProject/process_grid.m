@@ -64,8 +64,8 @@ function nursery = process_grid(grid,nursery,K,Xmax,Ymax,R,C)
     end
     values = 1:K;
     tree_list = [tree_xs;tree_ys;tree_ds;discretize(tree_xs,K,values)]';
-    figure
-    plot(tree_list(:,1),tree_list(:,2),'*');
+%     figure
+%     plot(tree_list(:,1),tree_list(:,2),'*');
     for k = 1:length(tree_list)
        nursery.AddTree(tree_list(k,1),tree_list(k,2),tree_list(k,3),tree_list(k,4));
     end

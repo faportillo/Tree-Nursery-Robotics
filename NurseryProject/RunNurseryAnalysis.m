@@ -236,11 +236,14 @@ if PRINT_MAP
   ylabel('World Y [m]')
 end
 
+%Process prob_grid and add trees to nursery tree list
+nursery = process_grid(prob_grid,nursery,K,Xmax,Ymax,r,c);
+
 %test of output functions    -Tim
-diam = 0.3 .* rand(20 * K, 1) + 0.2;
-for i = 1:(20*K)
-  nursery.AddTree(i, i*2, diam(i), floor((i-1) / 20) + 1)
-end
+% diam = 0.3 .* rand(20 * K, 1) + 0.2;
+% for i = 1:(20*K)
+%   nursery.AddTree(i, i*2, diam(i), floor((i-1) / 20) + 1)
+% end
 nursery.WriteResults('testResults.txt');
 
 fprintf('))) Done (((\n')
