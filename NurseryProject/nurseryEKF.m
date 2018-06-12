@@ -1,4 +1,4 @@
-function [kPose, P] = nurseryEKF(kPose, odo, z, P, V, W)
+function [kPose, P] = nurseryEKF(oldkPose, odo, z, oldP, V, W)
 %Extended Kalman Filter takes in dead reckoning states, covariance
 %matrices, and noisy gps reading and returns new, filtered states and
 %updated covariance matrices
@@ -10,9 +10,9 @@ function [kPose, P] = nurseryEKF(kPose, odo, z, P, V, W)
 %V -> estimate of process noise covariance
 %W -> estimate of sensor noise covariance
 
-x = kPose(1);
-y = kPose(2);
-theta = kPose(3);
+x = oldkPose(1);
+y = oldkPose(2);
+theta = oldkPose(3);
 dDist = odo(1);
 dTheta = odo(2);
 
@@ -22,13 +22,14 @@ kPose = [x + dDist*cos(theta); y + dDist*cos(theta); theta + dTheta];
 Fx = [1 0 -dDist*sin(theta+dTheta); 0 1 dDist*cos(theta+dTheta); 0 0 1];
 Fv = [cos(theta+dTheta)  -dDist*sin(theta+dTheta); sin(theta+dTheta) dDist*cos(theta+dTheta); 0 1];
 %Update the uncertainty matrix
-P = Fx*P*transpose(Fx) + Fv*V*transpose(Fv);
+P = Fx*oldP*transpose(Fx) + Fv*V*transpose(Fv);
 %Innovation covariance
 S = P + W;
 %Kalman gain matrix
-K = P*inv(S);
+K = P/S;
 %Compute innovation/residuals
 v = z - kPose; 
 %Update step
 kPose = kPose + K*v;
 P = P - K*P;
+end
