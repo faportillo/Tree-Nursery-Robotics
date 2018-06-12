@@ -10,18 +10,20 @@ addpath '../Common/geom2d/geom2d'
 clear
 close all
 
-PLOT_REAL_TREES = true;
-PRINT_MAP = true;
-% PRINT_GRID = true;
-vd = 4;              %max velocity [m/s]
+PLOT_REAL_TREES = true;     %true for plotting ground truth map
+PRINT_MAP = true;           %true for plotting robot position and
+                            %inferred probability grid
+vd = 4;                     %max velocity [m/s]
+RESCAN_TIME = 10;           %scan every n redraws of the robot position
 
-global bitmap;
-global dT;
-global DT;
-global occ_grid;
-global prob_grid;
-global Pfree; global Pocc;
+global bitmap;              %ground truth
+global dT;                  %little time division
+global DT;                  %big time division
+global occ_grid;            %ocupancy grid
+global prob_grid;           %probability grid
+global Pfree; global Pocc;  %probabilities of occupancy and free space
 
+%generate ground truth
 [K, x_im, y_im] = generateNursery();
 
 if PLOT_REAL_TREES
@@ -30,7 +32,7 @@ if PLOT_REAL_TREES
   set(gca,'YDir','normal');
 end
 
-
+%indicies of various parameters
 X = 1;
 Y = 2;
 THETA = 3;
@@ -42,16 +44,17 @@ W = 3;               % row width [m]
 Gmax = 55 * pi/180;  %steering angle max
 L = 3;               %wheelbase
 span = deg2rad(180); % 180 degrees
-start = [2,2];
-endI = 2 * K + 2;  %end index of last node
-tauG = 0.1;        %steeing lag
-tauV = 0.2;        %velocity lag
-s = 0;             %slip
-skidDR = 0;        %rear skid
-skidDF = 0;        %front skid
-dT = 0.001;
-DT = 0.01;
+start = [2,2];       %start at 2,2 so we can see the robot the whole time
+endI = 2 * K + 2;    %end index of last node
+tauG = 0.1;          %steeing lag
+tauV = 0.2;          %velocity lag
+s = 0;               %slip
+skidDR = 0;          %rear skid
+skidDF = 0;          %front skid
+dT = 0.001;          %seconds
+DT = 0.01;           %seconds
 
+%State limits
 Qmax = zeros(1, 5);
 Qmax(X) = Inf; Qmax(Y) = Inf; Qmax(THETA) = Inf;
 Qmax(GAMMA) = Gmax; Qmax(VEL) = vd;
@@ -60,8 +63,9 @@ Qmin = -Qmax; % symmetrical negative constraints for minimum values
 Umax=[Gmax vd]';
 Umin= -Umax;
 
+%numbers of rows and columns of the laser scanned map (prob_grid)
+r = size(bitmap,1); c = size(bitmap,2);
 % initialize as empty
-r = size(bitmap,1); c = size(bitmap,2); %numbers of rows and columns of the laser scanned map (prob_grid)
 occ_grid = ones(size(bitmap));
 prob_grid = zeros(size(bitmap));
 Pocc = 0.7; Pfree = 1-Pocc;
@@ -99,8 +103,10 @@ C = struct('W', W,...     %center-to-center row distance [m]
 
 %create nodes between ends of rows and assign costs
 [nodes, DMAT] = Nursery.MakeNodes(C);
+%robot instance
 robot = DrawableRobot(start(X), start(Y), pi/2, C.Rw, C.L, C.Gmax, C.Vmax, ...
   C.Ld);
+%nursery instance
 nursery = Nursery(bitmap, K, C.RL, C.W, nodes, robot);
 
 if PRINT_MAP
@@ -113,26 +119,28 @@ if success == false %genetic algorithm generated invalid path
   return;    %error is printed internally, exit program
 end
 
-
-%frame = [-1, (C.swY + C.RL + 10), -1, (C.swX + C.W * C.K + 10)];
+%frame to draw environment in
 frame = [x_im, y_im];
 % define map dimensions
-%frameSize = max(abs(frame(2) - frame(1)), abs(frame(4) - frame(3)));
 Xmax = x_im(2); Ymax = y_im(2);
 robot.dim = [1.5, 1.2];    %3 meters long, 2.4 wide
 if PRINT_MAP
   figure(2)
   robot.DrawRobot(frame)
 end
-pathPoints = nursery.robotPath;
-planner = PathPlanner(pathPoints);
-pathPoint = 'b.';
+pathPoints = nursery.robotPath;     %list of points to follow
+planner = PathPlanner(pathPoints);  %path planner object
+pathPoint = 'b.';                   %robot path is blue dots
 
-prev = 1;
+prev = 1;    %previous point on the path to follow
 if PRINT_MAP
   lookAhead = plot(pathPoints(X, 3), pathPoints(Y, 3), 'k*');
+  probGridPlot = plot(0, 0, 'b.');
 end
-rescanT = 10 * C.redrawT;
+
+%time for rescanning
+rescanT = RESCAN_TIME * C.redrawT;
+
 %% Find covariance matrices
 N = 10000; 
 wx = zeros(1,N);
@@ -161,7 +169,7 @@ for t = 0:C.DT:(C.T - C.DT)
   scan = mod(t, rescanT) == 0;
 
   
-  if scan %&& false    %temporary to suppress scanning
+  if scan
     Tl = se2(robot.x, robot.y, robot.theta);
     p = laserScannerNoisy(C.angleSpan, C.angleStep, C.rangeMax, Tl, bitmap, Xmax, Ymax); 
     p(:,2) = medfilt1(p(:,2));
@@ -169,10 +177,14 @@ for t = 0:C.DT:(C.T - C.DT)
       angle = p(j,1); range = p(j,2);
       n = updateLaserBeamGrid(angle, range, Tl, r, c, C.rangeMax, Xmax, Ymax, po, pf);
     end
-    figure(2)
-    imagesc([frame(1) Xmax], [frame(3) Ymax], flipud(prob_grid)); %imagesc flips the bitmap rows, so correct this
-    set(gca,'YDir','normal');
-    pause(C.aniPause)
+    if PRINT_MAP
+      figure(2)
+      delete(probGridPlot)
+      probGridPlot = imagesc([frame(1) Xmax], [frame(3) Ymax], ...
+        flipud(prob_grid));
+      set(gca,'YDir','normal');
+      pause(C.aniPause)
+    end
   end
   
   %robot.Move_EulerAckFK(gammaD, vd, C, s, skidDR, skidDF, tauV, tauG);
@@ -183,7 +195,7 @@ for t = 0:C.DT:(C.T - C.DT)
   z = [xsensed; ysensed; thetasensed];
   
   [kPose, P] = nurseryEKF(kPose, odo, z, P, V, W);
-  %printf diff between true pose and estimate
+  %print diff between true pose and estimate
   %{
   fprintf('%2.2f, %2.2f, D:%2.2f   %2.2f, %2.2f, D:%2.2f   %2.2f, %2.2f, D:%2.2f\n',...
     savePose(X), kPose(X), savePose(X) - kPose(X), savePose(Y), ...
