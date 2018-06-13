@@ -10,6 +10,8 @@ addpath '../Common/geom2d/geom2d'
 clear
 close all
 
+outputFilename = 'NurseryResults.txt';
+
 PLOT_REAL_TREES = true;     %true for plotting ground truth map
 PRINT_MAP = true;           %true for plotting robot position and
                             %inferred probability grid
@@ -104,8 +106,8 @@ C = struct('W', W,...     %center-to-center row distance [m]
 %create nodes between ends of rows and assign costs
 [nodes, DMAT] = Nursery.MakeNodes(C);
 %robot instance
-robot = DrawableRobot(start(X), start(Y), pi/2, C.Rw, C.L, C.Gmax, C.Vmax, ...
-  C.Ld);
+robot = DrawableRobot(start(X), start(Y), pi/2, C.Rw, C.L, C.Gmax, ...
+  C.Vmax, C.Ld);
 %nursery instance
 nursery = Nursery(bitmap, K, C.RL, C.W, nodes, robot);
 
@@ -151,7 +153,7 @@ q = [0 0 0 0 0]; %initialize a robot w/zero for all states.
 u = [0 0]; %initialize zero for steering and speed inputs.
 for i=1:N
     [wx(i), wy(i), wtheta(i)] = GPS_CompassNoisy(q(X), q(Y), q(THETA));
-    [trash, odo(i,:)] = robot_odo(q, u, Umin, Umax, Qmin, Qmax, L, tauG, tauV); 
+    [~, odo(i,:)] = robot_odo(q, u, Umin, Umax, Qmin, Qmax, L, tauG, tauV); 
 end
 A = [wx; wy; wtheta]';
 B = [odo(:,1) odo(:,2)];
@@ -171,11 +173,13 @@ for t = 0:C.DT:(C.T - C.DT)
   
   if scan
     Tl = se2(robot.x, robot.y, robot.theta);
-    p = laserScannerNoisy(C.angleSpan, C.angleStep, C.rangeMax, Tl, bitmap, Xmax, Ymax); 
+    p = laserScannerNoisy(C.angleSpan, C.angleStep, C.rangeMax, Tl, ...
+      bitmap, Xmax, Ymax); 
     p(:,2) = medfilt1(p(:,2));
     for j=1:length(p)
       angle = p(j,1); range = p(j,2);
-      n = updateLaserBeamGrid(angle, range, Tl, r, c, C.rangeMax, Xmax, Ymax, po, pf);
+      n = updateLaserBeamGrid(angle, range, Tl, r, c, C.rangeMax, Xmax, ...
+        Ymax, po, pf);
     end
     if PRINT_MAP
       figure(2)
@@ -195,13 +199,6 @@ for t = 0:C.DT:(C.T - C.DT)
   z = [xsensed; ysensed; thetasensed];
   
   [kPose, P] = nurseryEKF(kPose, odo, z, P, V, W);
-  %print diff between true pose and estimate
-  %{
-  fprintf('%2.2f, %2.2f, D:%2.2f   %2.2f, %2.2f, D:%2.2f   %2.2f, %2.2f, D:%2.2f\n',...
-    savePose(X), kPose(X), savePose(X) - kPose(X), savePose(Y), ...
-    kPose(Y), savePose(Y) - kPose(Y), savePose(THETA), kPose(THETA), ...
-    savePose(THETA) - kPose(THETA));
-  %}
   
   %use estimated position for navigation controller
   robot.x = kPose(X);
@@ -224,7 +221,7 @@ for t = 0:C.DT:(C.T - C.DT)
   %set robot to new position for drawing
   robot.x = q(X); 
   robot.y = q(Y);
-  robot.theta = savePose(THETA) - (q(THETA) - savePose(THETA)); %q(THETA); %
+  robot.theta = savePose(THETA) - (q(THETA) - savePose(THETA));
   robot.gamma = q(GAMMA);
   robot.v = q(VEL);
   
@@ -236,16 +233,11 @@ for t = 0:C.DT:(C.T - C.DT)
   end
     
   if prev == planner.nPoints && abs(errX) + abs(errY) < C.posEpsilon
-    break   % stop if navigating to last path point and position close enough
+    break   % stop if navigating to last path point and position close
   end
 end
   
 if PRINT_MAP
-  %{
-  plot(pathPoints(X, 1:21), pathPoints(Y, 1:21), 'g.')
-  plot(pathPoints(X, (nPoints+1):(nPoints+25)), ...
-    pathPoints(Y, (nPoints+1):(nPoints+25)), 'k.')
-  %}
   xlabel('World X [m]')
   ylabel('World Y [m]')
 end
@@ -253,6 +245,6 @@ end
 %Process prob_grid and add trees to nursery tree list
 nursery.ProcessGrid(prob_grid, Xmax, Ymax, r, c);
 
-nursery.WriteResults('testResults.txt');
+nursery.WriteResults(outputFilename);
 
 fprintf('))) Done (((\n')
