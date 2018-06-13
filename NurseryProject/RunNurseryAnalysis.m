@@ -24,7 +24,7 @@ global prob_grid;           %probability grid
 global Pfree; global Pocc;  %probabilities of occupancy and free space
 
 %generate ground truth
-[K, x_im, y_im] = generateNursery();
+[K, x_im, y_im, x_a, y_a, rad] = generateNursery();
 
 if PLOT_REAL_TREES
   figure(1)

@@ -1,5 +1,5 @@
 %clear all;
-function [K, x_im, y_im] = generateNursery()
+function [K, x_im, y_im, x_a, y_a, rad] = generateNursery()
 rng('shuffle'); %init random generator
 global bitmap;
 
@@ -30,12 +30,17 @@ while (j<=K)
     x(1,j) = x(1,j-1) + W; y(1,j) = 10; 
 end
 % assign a random radius to each tree
+n = 1;
 for j=1:K
     for i=1:M
         radius = (minTreeRadius + rand*(maxTreeRadius-minTreeRadius))/ (Xmax/C); %(m)
         [I, J] = XYtoIJ(x(i,j), y(i,j), Xmax, Ymax, R, C);
         if rand > 0.2 
           draw_disc(I, J, radius, R, C); %plot tree trunk
+          rad(n) = radius; 
+          x_a(n) = x(i,j);
+          y_a(n) = y(i,j);
+          n = n+1;
         end
         %plot random small speckles
         draw_disc(ceil(rand * R / 2 + R / 4), ...
