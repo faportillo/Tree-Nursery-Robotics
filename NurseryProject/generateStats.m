@@ -21,15 +21,15 @@ d_m = new_list(:,3)';
 d_a = 2.*(rad.*(Xmax/c)); 
 
 % attach the row numbers of each tree to y and d
-val_convert = [y_a' d_a' tree_list(:,4)]; 
+val_convert = [x_a' y_a' d_a' tree_list(:,4)]; 
 
 % find indices of trees per row
-ind1 = val_convert(:,3) == 1;
-ind2 = val_convert(:,3) == 2;
-ind3 = val_convert(:,3) == 3;
-ind4 = val_convert(:,3) == 4;
-ind5 = val_convert(:,3) == 5;
-ind6 = val_convert(:,3) == 6;
+ind1 = val_convert(:,4) == 1;
+ind2 = val_convert(:,4) == 2;
+ind3 = val_convert(:,4) == 3;
+ind4 = val_convert(:,4) == 4;
+ind5 = val_convert(:,4) == 5;
+ind6 = val_convert(:,4) == 6;
 
 % use logical indices to return sub-matrices containing trees grouped by
 % row
@@ -49,10 +49,11 @@ t5 = flipud(t5);
 t6 = flipud(t6);
 
 % store the newly sorted values
-y_list = [t1(:,1);t2(:,1);t3(:,1);t4(:,1);t5(:,1);t6(:,1)];
-
-d_a = [t1(:,2);t2(:,2);t3(:,2);t4(:,2);t5(:,2);t6(:,2)];
+x_a = [t1(:,1);t2(:,1);t3(:,1);t4(:,1);t5(:,1);t6(:,1)];
+y_list = [t1(:,2);t2(:,2);t3(:,2);t4(:,2);t5(:,2);t6(:,2)];
 y_a = 50 - y_list;
+d_a = [t1(:,3);t2(:,3);t3(:,3);t4(:,3);t5(:,3);t6(:,3)];
+
 
 % calculate the error
 for i = 1:1:length(x_a)
